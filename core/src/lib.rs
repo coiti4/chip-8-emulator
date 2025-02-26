@@ -1,25 +1,10 @@
 use std::collections::VecDeque;
 
-const FONTSET_SIZE: usize = 80;
+mod instructions;
+mod font;
 
-const FONTSET: [u8; FONTSET_SIZE] = [
-    0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
-    0x20, 0x60, 0x20, 0x20, 0x70, // 1
-    0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
-    0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
-    0x90, 0x90, 0xF0, 0x10, 0x10, // 4
-    0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
-    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
-    0xF0, 0x10, 0x20, 0x40, 0x40, // 7
-    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
-    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
-    0xF0, 0x90, 0xF0, 0x90, 0x90, // A
-    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
-    0xF0, 0x80, 0x80, 0x80, 0xF0, // C
-    0xE0, 0x90, 0x90, 0x90, 0xE0, // D
-    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
-    0xF0, 0x80, 0xF0, 0x80, 0x80, // F
-];
+use instructions::Decoded;
+use font::{FONTSET, FONTSET_SIZE};
 
 // The following are public because they are used in the main.rs file
 pub const SCREEN_WIDTH: usize = 64;
@@ -61,7 +46,7 @@ impl Emu {
         // Load fontset into memory
         my_emu.ram[..FONTSET_SIZE].copy_from_slice(&FONTSET);
 
-        my_emu
+        return my_emu;
     }
 
     pub fn reset(&mut self) {
@@ -79,9 +64,11 @@ impl Emu {
 
     pub fn tick(&mut self) {
         // Fetch opcode
-        let opcode: self.fetch();
+        let opcode = self.fetch();
         // Decode opcode
+        let decoded = self.decode(opcode);
         // Execute opcode
+        self.execute(decoded);
     }
 
     fn fetch(&mut self) -> u16 {
@@ -89,7 +76,31 @@ impl Emu {
         let l_byte = self.ram[(self.pc + 1) as usize] as u16;
         self.pc += 2;
 
-        (h_byte << 8) | l_byte // Big-endian
+        return (h_byte << 8) | l_byte; // Big-endian
+    }
+
+    fn decode(&mut self, opcode: u16) -> Decoded {
+        // TODO
+        let nibble0 = (opcode & 0xF000) >> 12;
+        let nibble1 = (opcode & 0x0F00) >> 8;
+        let nibble2 = (opcode & 0x00F0) >> 4;
+        let nibble3 = opcode & 0x000F;
+
+        match (nibble0, nibble1, nibble2, nibble3) {
+            (0, 0, 0, 0)    => Decoded::NOP,
+            (0, 0, 0xE, 0)  => Decoded::ClearScreen,
+
+            (_, _, _, _) => unimplemented!("Unknown opcode: {:#06x}", opcode),
+        }
+    }
+
+    fn execute(&mut self, instruction: Decoded) {
+        // TODO
+        match instruction {
+            Decoded::NOP => (),
+            Decoded::ClearScreen => self.screen = [false; SCREEN_WIDTH * SCREEN_HEIGHT],
+            _ => unimplemented!("Unknown instruction: {:?}", instruction), // impossible to reach
+        }
     }
 
     pub fn tick_timers(&mut self) {
@@ -98,7 +109,7 @@ impl Emu {
         }
 
         if self.st > 0 {
-            // Beep
+            // Beep: I'll implement this later
             
             self.st -= 1;
         }
