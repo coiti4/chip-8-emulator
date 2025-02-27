@@ -17,4 +17,7 @@ pub enum Decoded {
     Xor(u8, u8),        // 0x8XY3
     AddRegReg(u8, u8),  // 0x8XY4
     SubRegReg(u8, u8),  // 0x8XY5
+    RightShift(u8),     // 0x8XY6
+    SubRegRegRev(u8, u8), // 0x8XY7
+    LeftShift(u8),      // 0x8XYE
 }

@@ -103,6 +103,9 @@ impl Emu {
             (8, _, _, 3)        => Decoded::Xor(nibble2, nibble1),
             (8, _, _, 4)        => Decoded::AddRegReg(nibble2, nibble1),
             (8, _, _, 5)        => Decoded::SubRegReg(nibble2, nibble1),
+            (8, _, _, 6)        => Decoded::RightShift(nibble2),
+            (8, _, _, 7)        => Decoded::SubRegRegRev(nibble2, nibble1),
+            (8, _, _, 0xE)      => Decoded::LeftShift(nibble2),
             (_, _, _, _) => unimplemented!("Unknown opcode: {:#06x}", opcode),
         }
     }
@@ -160,6 +163,19 @@ impl Emu {
                 let (result, overflow) = self.v_reg[x as usize].overflowing_sub(self.v_reg[y as usize]);
                 self.v_reg[x as usize] = result;
                 self.v_reg[NUM_REGS - 1] = overflow as u8;
+            },
+            Decoded::RightShift(x) => {
+                self.v_reg[NUM_REGS - 1] = self.v_reg[x as usize] & 0x1;
+                self.v_reg[x as usize] >>= 1;
+            },
+            Decoded::SubRegRegRev(x,y ) => {
+                let (result, overflow) = self.v_reg[y as usize].overflowing_sub(self.v_reg[x as usize]);
+                self.v_reg[x as usize] = result;
+                self.v_reg[NUM_REGS - 1] = overflow as u8;
+            },
+            Decoded::LeftShift(x) => {
+                self.v_reg[NUM_REGS - 1] = (self.v_reg[x as usize] & 0x80) >> 7;
+                self.v_reg[x as usize] <<= 1;
             },
             _ => unimplemented!("Unknown instruction: {:?}", instruction), // impossible to reach
         }
