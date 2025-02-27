@@ -9,4 +9,12 @@ pub enum Decoded {
     SkipEq(u8, u8),     // 0x3XNN
     SkipNeq(u8, u8),    // 0x4XNN
     SkipEqReg(u8, u8),  // 0x5XY0
+    SetReg(u8, u8),     // 0x6XNN
+    AddReg(u8, u8),     // 0x7XNN
+    SetRegReg(u8, u8),  // 0x8XY0
+    Or(u8, u8),         // 0x8XY1
+    And(u8, u8),        // 0x8XY2
+    Xor(u8, u8),        // 0x8XY3
+    AddRegReg(u8, u8),  // 0x8XY4
+    SubRegReg(u8, u8),  // 0x8XY5
 }
