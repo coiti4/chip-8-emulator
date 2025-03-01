@@ -128,7 +128,6 @@ impl Emu {
     }
 
     fn execute(&mut self, instruction: Decoded) {
-        // TODO
         match instruction {
             Decoded::NOP             => (),
             Decoded::ClearScreen     => self.screen = [false; SCREEN_WIDTH * SCREEN_HEIGHT],
@@ -260,6 +259,51 @@ impl Emu {
             },
             Decoded::GetDelay(x) => {
                 self.v_reg[x as usize] = self.dt;
+            },
+            Decoded::WaitKey(x) => {
+                let mut key_pressed = false;
+                for (i, key) in self.keys.iter().enumerate() {
+                    if *key { // if the key is pressed
+                        self.v_reg[x as usize] = i as u8;
+                        key_pressed = true;
+                        break;
+                    }
+                }
+
+                // if no key is pressed, decrement the program counter to repeat the instruction
+                if !key_pressed {
+                    self.pc -= 2;
+                }
+            },
+            Decoded::SetDelay(x) => {
+                self.dt = self.v_reg[x as usize];
+            },
+            Decoded::SetSound(x) => {
+                self.st = self.v_reg[x as usize];
+            },
+            Decoded::AddIReg(x) => {
+                self.i_reg += self.v_reg[x as usize] as u16;
+            },
+            Decoded::SetIRegFont(x) => { 
+                // store the address of v[x] sprite in I. Each sprite is 5 bytes long.
+                self.i_reg = self.v_reg[x as usize] as u16 * 5;
+            },
+            Decoded::StoreBCD(x) => {
+                let value = self.v_reg[x as usize];
+                // implicit floor division
+                self.ram[self.i_reg as usize] = value / 100; // hundreds
+                self.ram[self.i_reg as usize + 1] = (value / 10) % 10; // tens
+                self.ram[self.i_reg as usize + 2] = value % 10; // units
+            },
+            Decoded::StoreRegsToMem(x) => {
+                for i in 0..=x {
+                    self.ram[self.i_reg as usize + i as usize] = self.v_reg[i as usize];
+                }
+            },
+            Decoded::LoadMemToRegs(x) => {
+                for i in 0..=x {
+                    self.v_reg[i as usize] = self.ram[self.i_reg as usize + i as usize];
+                }
             },
             _ => unimplemented!("Unknown instruction: {:?}", instruction), // impossible to reach
         }
