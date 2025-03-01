@@ -112,6 +112,17 @@ impl Emu {
             (0xB, _, _, _)      => Decoded::JumpOffset(opcode & 0x0FFF),
             (0xC, _, _, _)      => Decoded::Rand(nibble2, nibble1 + nibble0),
             (0xD, _, _, _)      => Decoded::Draw(nibble2, nibble1, nibble0),
+            (0xE, _, 9, 0xE)    => Decoded::SkipKey(nibble2),
+            (0xE, _, 0xA, 1)    => Decoded::SkipNKey(nibble2),
+            (0xF, _, 0, 7)      => Decoded::GetDelay(nibble2),
+            (0xF, _, 0, 0xA)    => Decoded::WaitKey(nibble2),
+            (0xF, _, 1, 5)      => Decoded::SetDelay(nibble2),
+            (0xF, _, 1, 8)      => Decoded::SetSound(nibble2),
+            (0xF, _, 1, 0xE)    => Decoded::AddIReg(nibble2),
+            (0xF, _, 2, 9)      => Decoded::SetIRegFont(nibble2),
+            (0xF, _, 3, 3)      => Decoded::StoreBCD(nibble2),
+            (0xF, _, 5, 5)      => Decoded::StoreRegsToMem(nibble2),
+            (0xF, _, 6, 5)      => Decoded::LoadMemToRegs(nibble2),
             (_, _, _, _) => unimplemented!("Unknown opcode: {:#06x}", opcode),
         }
     }
@@ -236,6 +247,19 @@ impl Emu {
                         }
                     }
                 }
+            },
+            Decoded::SkipKey(x) => {
+                if self.keys[self.v_reg[x as usize] as usize] {
+                    self.pc += 2;
+                }
+            },
+            Decoded::SkipNKey(x) => {
+                if !self.keys[self.v_reg[x as usize] as usize] {
+                    self.pc += 2;
+                }
+            },
+            Decoded::GetDelay(x) => {
+                self.v_reg[x as usize] = self.dt;
             },
             _ => unimplemented!("Unknown instruction: {:?}", instruction), // impossible to reach
         }

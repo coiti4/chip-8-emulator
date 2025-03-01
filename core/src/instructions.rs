@@ -25,4 +25,15 @@ pub enum Decoded {
     JumpOffset(u16),    // 0xBNNN
     Rand(u8, u8),       // 0xCXNN
     Draw(u8, u8, u8),   // 0xDXYN
+    SkipKey(u8),        // 0xEX9E
+    SkipNKey(u8),       // 0xEXA1
+    GetDelay(u8),       // 0xFX07
+    WaitKey(u8),        // 0xFX0A
+    SetDelay(u8),       // 0xFX15
+    SetSound(u8),       // 0xFX18
+    AddIReg(u8),        // 0xFX1E
+    SetIRegFont(u8),    // 0xFX29
+    StoreBCD(u8),       // 0xFX33
+    StoreRegsToMem(u8), // 0xFX55
+    LoadMemToRegs(u8),    // 0xFX65
 }
