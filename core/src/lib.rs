@@ -221,18 +221,18 @@ impl Emu {
                         in the last two cases the screen bit is XORed with 1, so it changes
                         */
                         if sprite_bit != 0 {
-                            let x_final = (x_pos + col) % SCREEN_WIDTH;
-                            let y_final = (y_pos + row) % SCREEN_HEIGHT;
+                            let x_final = (x_pos + col) % SCREEN_WIDTH as u8;
+                            let y_final = (y_pos + row) % SCREEN_HEIGHT as u8;
 
-                            let screen_idx = y_final * SCREEN_WIDTH + x_final;
+                            let screen_idx = y_final * SCREEN_WIDTH as u8 + x_final;
 
                             // if the screen bit was 1 (and sprite bit was 1), this means collision, set VF to 1
-                            if self.screen[screen_idx] {
+                            if self.screen[screen_idx as usize] {
                                 self.v_reg[NUM_REGS - 1] = 1;
                             }
 
                             // XOR the sprite bit with the screen bit
-                            self.screen[screen_idx] ^= true;
+                            self.screen[screen_idx as usize] ^= true;
                         }
                     }
                 }
