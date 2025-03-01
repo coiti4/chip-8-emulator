@@ -197,7 +197,46 @@ impl Emu {
             Decoded::Rand(x, value) => {
                 self.v_reg[x as usize] = random::<u8>() & value;
             },
-            Decoded::Draw(x,y , )
+            Decoded::Draw(x,y , nb_rows) => {
+                let x_pos = self.v_reg[x as usize];
+                let y_pos = self.v_reg[y as usize];
+
+                self.v_reg[NUM_REGS - 1] = 0; // Reset VF
+
+                // iterate over each row of the sprite
+                for row in 0..nb_rows {
+                    let sprite_row = self.ram[self.i_reg as usize + row as usize];
+
+                    // iterate over each pixel(bit) in the row
+                    for col in 0..8 {
+                        let sprite_bit = (sprite_row >> (7 - col)) & 0x1; // MSB on the left
+                        /*
+                        sprite   screen  |  new screen
+                        0        0       |  0
+                        0        1       |  1
+                        1        0       |  1
+                        1        1       |  0 (collision)
+
+                        in the first two cases the screen bit is XORed with 0, so it remains the same
+                        in the last two cases the screen bit is XORed with 1, so it changes
+                        */
+                        if sprite_bit != 0 {
+                            let x_final = (x_pos + col) % SCREEN_WIDTH;
+                            let y_final = (y_pos + row) % SCREEN_HEIGHT;
+
+                            let screen_idx = y_final * SCREEN_WIDTH + x_final;
+
+                            // if the screen bit was 1 (and sprite bit was 1), this means collision, set VF to 1
+                            if self.screen[screen_idx] {
+                                self.v_reg[NUM_REGS - 1] = 1;
+                            }
+
+                            // XOR the sprite bit with the screen bit
+                            self.screen[screen_idx] ^= true;
+                        }
+                    }
+                }
+            },
             _ => unimplemented!("Unknown instruction: {:?}", instruction), // impossible to reach
         }
     }
