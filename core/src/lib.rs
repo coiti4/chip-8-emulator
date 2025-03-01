@@ -1,4 +1,5 @@
-use std::collections::VecDeque;
+use std::collections::{btree_map::Values, VecDeque};
+use rand::random;
 
 mod instructions;
 mod font;
@@ -106,6 +107,11 @@ impl Emu {
             (8, _, _, 6)        => Decoded::RightShift(nibble2),
             (8, _, _, 7)        => Decoded::SubRegRegRev(nibble2, nibble1),
             (8, _, _, 0xE)      => Decoded::LeftShift(nibble2),
+            (9, _, _, 0)        => Decoded::SkipNeqReg(nibble2, nibble1),
+            (0xA, _, _, _)      => Decoded::SetIReg(opcode & 0x0FFF),
+            (0xB, _, _, _)      => Decoded::JumpOffset(opcode & 0x0FFF),
+            (0xC, _, _, _)      => Decoded::Rand(nibble2, nibble1 + nibble0),
+            (0xD, _, _, _)      => Decoded::Draw(nibble2, nibble1, nibble0),
             (_, _, _, _) => unimplemented!("Unknown opcode: {:#06x}", opcode),
         }
     }
@@ -177,6 +183,21 @@ impl Emu {
                 self.v_reg[NUM_REGS - 1] = (self.v_reg[x as usize] & 0x80) >> 7;
                 self.v_reg[x as usize] <<= 1;
             },
+            Decoded::SkipNeqReg(x, y ) => {
+                if self.v_reg[x as usize] != self.v_reg[y as usize] {
+                    self.pc += 2;
+                }
+            },
+            Decoded::SetIReg(addr) => {
+                self.i_reg = addr;
+            },
+            Decoded::JumpOffset(offset) => {
+                self.pc = offset + self.v_reg[0] as u16;
+            },
+            Decoded::Rand(x, value) => {
+                self.v_reg[x as usize] = random::<u8>() & value;
+            },
+            Decoded::Draw(x,y , )
             _ => unimplemented!("Unknown instruction: {:?}", instruction), // impossible to reach
         }
     }

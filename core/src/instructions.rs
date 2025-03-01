@@ -20,4 +20,9 @@ pub enum Decoded {
     RightShift(u8),     // 0x8XY6
     SubRegRegRev(u8, u8), // 0x8XY7
     LeftShift(u8),      // 0x8XYE
+    SkipNeqReg(u8, u8), // 0x9XY0
+    SetIReg(u16),       // 0xANNN
+    JumpOffset(u16),    // 0xBNNN
+    Rand(u8, u8),       // 0xCXNN
+    Draw(u8, u8, u8),   // 0xDXYN
 }
