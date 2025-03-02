@@ -320,5 +320,21 @@ impl Emu {
             self.st -= 1;
         }
     }
+
+    pub fn get_display(&self) -> &[bool] {
+        &self.screen
+    }
+
+    pub fn keypress(&mut self, key: usize, pressed: bool) {
+        if key < NUM_KEYS {
+            self.keys[key] = pressed;
+        }
+    }
+
+    pub fn load_rom(&mut self, rom: &[u8]) {
+        let start = START_ADDR as usize;
+        let end = start + rom.len();
+        self.ram[start..end].copy_from_slice(rom);
+    }
 }
 
