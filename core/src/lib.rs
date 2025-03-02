@@ -1,4 +1,4 @@
-use std::collections::{btree_map::Values, VecDeque};
+use std::collections::{VecDeque};
 use rand::random;
 
 mod instructions;
@@ -208,8 +208,8 @@ impl Emu {
                 self.v_reg[x as usize] = random::<u8>() & value;
             },
             Decoded::Draw(x,y , nb_rows) => {
-                let x_pos = self.v_reg[x as usize];
-                let y_pos = self.v_reg[y as usize];
+                let x_pos = self.v_reg[x as usize] as u16;
+                let y_pos = self.v_reg[y as usize] as u16;
 
                 self.v_reg[NUM_REGS - 1] = 0; // Reset VF
 
@@ -231,18 +231,18 @@ impl Emu {
                         in the last two cases the screen bit is XORed with 1, so it changes
                         */
                         if sprite_bit != 0 {
-                            let x_final = (x_pos + col) % SCREEN_WIDTH as u8;
-                            let y_final = (y_pos + row) % SCREEN_HEIGHT as u8;
+                            let x_final = (x_pos as usize + col as usize) % SCREEN_WIDTH;
+                            let y_final = (y_pos as usize + row as usize)   % SCREEN_HEIGHT;
 
-                            let screen_idx = y_final * SCREEN_WIDTH as u8 + x_final;
+                            let screen_idx = y_final * SCREEN_WIDTH + x_final;
 
                             // if the screen bit was 1 (and sprite bit was 1), this means collision, set VF to 1
-                            if self.screen[screen_idx as usize] {
+                            if self.screen[screen_idx] {
                                 self.v_reg[NUM_REGS - 1] = 1;
                             }
 
                             // XOR the sprite bit with the screen bit
-                            self.screen[screen_idx as usize] ^= true;
+                            self.screen[screen_idx] ^= true;
                         }
                     }
                 }
@@ -304,8 +304,7 @@ impl Emu {
                 for i in 0..=x {
                     self.v_reg[i as usize] = self.ram[self.i_reg as usize + i as usize];
                 }
-            },
-            _ => unimplemented!("Unknown instruction: {:?}", instruction), // impossible to reach
+           },
         }
     }
 
@@ -321,7 +320,7 @@ impl Emu {
         }
     }
 
-    pub fn get_display(&self) -> &[bool] {
+    pub fn get_screen(&self) -> &[bool] {
         &self.screen
     }
 
