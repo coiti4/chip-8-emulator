@@ -7,6 +7,7 @@ use sdl2::rect::Rect;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 use sdl2::keyboard::Keycode;
+use sdl2::ttf::Font;
 
 use rfd::FileDialog;
 use std::path::PathBuf;
@@ -41,7 +42,7 @@ fn keymap(key: Keycode) -> Option<usize> {
     }
 }
 
-fn draw_screen(chip8: &Emu, canvas: &mut Canvas<Window>) {
+fn draw_screen(chip8: &Emu, canvas: &mut Canvas<Window>, paused: bool, font: &Font) {
     // Clear canvas as black
     canvas.set_draw_color(Color::RGB(0, 0, 0));
     canvas.clear();
@@ -57,6 +58,22 @@ fn draw_screen(chip8: &Emu, canvas: &mut Canvas<Window>) {
             // draw pixel at position (x, y) with scale
             canvas.fill_rect(Rect::new(x * SCALE as i32, y * SCALE as i32, SCALE, SCALE)).unwrap();
         }
+    }
+
+    if paused {
+        let surface = font.render("PAUSE")
+            .blended(Color::RGB(255, 255, 255))
+            .unwrap();
+        let texture_creator = canvas.texture_creator();
+        let texture = texture_creator.create_texture_from_surface(&surface).unwrap();
+        let texture_query = texture.query();
+        let rect = Rect::new(
+            (WINDOW_WIDTH as i32 - texture_query.width as i32) / 2,
+            (WINDOW_HEIGHT as i32 - texture_query.height as i32) / 2,
+            texture_query.width,
+            texture_query.height,
+        );
+        canvas.copy(&texture, None, Some(rect)).unwrap();
     }
 
     // update canvas
@@ -101,6 +118,10 @@ fn main() {
 
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut paused = false; 
+
+    // Pause Font
+    let ttf_context = sdl2::ttf::init().unwrap();
+    let font = ttf_context.load_font("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 48).unwrap();
 
     'gameloop: loop {
         for event in event_pump.poll_iter() {
@@ -149,6 +170,6 @@ fn main() {
             }
             chip8.tick_timers();
         }
-        draw_screen(&chip8, &mut canvas);
+        draw_screen(&chip8, &mut canvas, paused, &font);
     }
 }
