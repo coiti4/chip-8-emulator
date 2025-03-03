@@ -35,5 +35,5 @@ pub enum Decoded {
     SetIRegFont(u8),    // 0xFX29
     StoreBCD(u8),       // 0xFX33
     StoreRegsToMem(u8), // 0xFX55
-    LoadMemToRegs(u8),    // 0xFX65
+    LoadMemToRegs(u8),  // 0xFX65
 }

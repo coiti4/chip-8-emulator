@@ -202,7 +202,7 @@ impl Emu {
                 self.i_reg = addr;
             },
             Decoded::JumpOffset(offset) => {
-                self.pc = (offset + self.v_reg[0] as u16) & 0xFFF;
+                self.pc = offset + self.v_reg[0] as u16;
             },
             Decoded::Rand(x, value) => {
                 self.v_reg[x as usize] = random::<u8>() & value;
@@ -286,7 +286,7 @@ impl Emu {
             },
             Decoded::SetIRegFont(x) => { 
                 // store the address of v[x] sprite in I. Each sprite is 5 bytes long.
-                self.i_reg = (self.v_reg[x as usize] as u16 * 5) & 0xFFF;
+                self.i_reg = self.v_reg[x as usize] as u16 * 5;
             },
             Decoded::StoreBCD(x) => {
                 let value = self.v_reg[x as usize];
