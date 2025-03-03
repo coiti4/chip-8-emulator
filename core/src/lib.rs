@@ -208,30 +208,43 @@ impl Emu {
                 self.v_reg[x as usize] = random::<u8>() & value;
             },
             Decoded::Draw(x,y , nb_rows) => {
-                let x_coord = self.v_reg[x as usize] as u16;
-                let y_coord = self.v_reg[y as usize] as u16;
+                let x_pos = self.v_reg[x as usize] as u16;
+                let y_pos = self.v_reg[y as usize] as u16;
 
-                let mut collision = false;
+                self.v_reg[NUM_REGS - 1] = 0; // Reset VF
 
-                for y_line in 0..nb_rows {
-                    let addr = (self.i_reg + y_line as u16) % 0xFFF;
-                    let pixels = self.ram[addr as usize];
-                    for x_line in 0..8 {
-                        if (pixels & (0x80 >> x_line)) != 0 {
-                            let x = (x_coord + x_line) as usize % SCREEN_WIDTH;
-                            let y = (y_coord + y_line as u16) as usize % SCREEN_HEIGHT;
+                // iterate over each row of the sprite
+                for row in 0..nb_rows {
+                    let sprite_row = self.ram[self.i_reg as usize + row as usize];
 
-                            let idx = y * SCREEN_WIDTH + x;
-                            collision |= self.screen[idx];
-                            self.screen[idx] ^= true;
+                    // iterate over each pixel(bit) in the row
+                    for col in 0..8 {
+                        let sprite_bit = (sprite_row >> (7 - col)) & 0x1; // MSB on the left
+                        /*
+                        sprite   screen  |  new screen
+                        0        0       |  0
+                        0        1       |  1
+                        1        0       |  1
+                        1        1       |  0 (collision)
+
+                        in the first two cases the screen bit is XORed with 0, so it remains the same
+                        in the last two cases the screen bit is XORed with 1, so it changes
+                        */
+                        if sprite_bit != 0 {
+                            let x_final = (x_pos as usize + col as usize) % SCREEN_WIDTH;
+                            let y_final = (y_pos as usize + row as usize)   % SCREEN_HEIGHT;
+
+                            let screen_idx = y_final * SCREEN_WIDTH + x_final;
+
+                            // if the screen bit was 1 (and sprite bit was 1), this means collision, set VF to 1
+                            if self.screen[screen_idx] {
+                                self.v_reg[NUM_REGS - 1] = 1;
+                            }
+
+                            // XOR the sprite bit with the screen bit
+                            self.screen[screen_idx] ^= true;
                         }
                     }
-                }
-
-                if collision {
-                    self.v_reg[NUM_REGS - 1] = 1;
-                } else {
-                    self.v_reg[NUM_REGS - 1] = 0;
                 }
             },
             Decoded::SkipKey(x) => {
