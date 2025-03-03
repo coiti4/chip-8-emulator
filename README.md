@@ -11,7 +11,7 @@ CHIP-8 Emulator is a Rust-based emulator for the CHIP-8 architecture. It provide
    - Keyboard input mapping for CHIP-8 keypad.
    - Pause functionality with a visual "PAUSE" indicator.
    - Easy-to-use file dialog for loading ROMs.
-   - Change the current exectuted ROMs using the file dialog.
+   - Dynamic ROM swapping.
    - Audio support.
 
 ## Project Structure
