@@ -2,7 +2,7 @@
 
 CHIP-8 Emulator is a Rust-based emulator for the CHIP-8 architecture. It provides a complete implementation of the CHIP-8 instruction set and is designed to run classic CHIP-8 programs and games. The emulator uses SDL2 for rendering and input handling, offering a simple and efficient way to experience retro computing.
 
-![CHIP-8 Emulator Demo](assets/demo.gif)
+![CHIP-8 Emulator Demo](assets/demo_chip_8.gif)
 
 ## Features
 
