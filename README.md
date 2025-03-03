@@ -18,9 +18,9 @@ To build and run the CHIP-8 Emulator, you need to have Rust and Cargo installed 
 
 ### Prerequisites
 
-    - **Rust** (latest stable version recommended)
-    - **Cargo**
-    - **SDL2** (with development libraries)
+ - **Rust** (latest stable version recommended)
+ - **Cargo**
+ - **SDL2** (with development libraries)
 
 On Ubuntu, you can install the required dependencies with:
 
