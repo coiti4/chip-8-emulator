@@ -1,5 +1,3 @@
-use std::env;
-
 use std::fs::File;
 use std::io::Read;
 
@@ -10,9 +8,12 @@ use sdl2::render::Canvas;
 use sdl2::video::Window;
 use sdl2::keyboard::Keycode;
 
+use rfd::FileDialog;
+use std::path::PathBuf;
+
 use core::*;
 
-const SCALE: u32 = 15;
+const SCALE: u32 = 16;
 const WINDOW_WIDTH: u32 = (SCREEN_WIDTH as u32) * SCALE;
 const WINDOW_HEIGHT: u32 = (SCREEN_HEIGHT as u32) * SCALE;
 
@@ -63,17 +64,27 @@ fn draw_screen(chip8: &Emu, canvas: &mut Canvas<Window>) {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        println!("Usage: cargo run <rom_file>");
-        return;
-    }
+    // try to obtain the path of the ROM file
+    let rom_path = std::env::args().nth(1).map(PathBuf::from).or_else(|| {
+        // if the path is not provided, open a file dialog
+        FileDialog::new()
+            .add_filter("CHIP-8 ROM", &["ch8", "rom", "bin"])
+            .set_directory("../roms") // Carpeta inicial (opcional)
+            .pick_file()
+    });
+
+    let rom_path = match rom_path {
+        Some(path) => path,
+        None => {
+            eprintln!("No ROM file selected, exiting...");
+            std::process::exit(1);
+        }
+    };
 
     let mut chip8 = Emu::new();
-
-    let mut rom = File::open(&args[1]).expect("Failed to open ROM file");
+    let mut rom = File::open(&rom_path).expect("Error opening ROM file");
     let mut buffer = Vec::new();
-    rom.read_to_end(&mut buffer).unwrap();
+    rom.read_to_end(&mut buffer).expect("Error reading ROM file");
     chip8.load_rom(&buffer);
 
     let sdl_context = sdl2::init().unwrap();
@@ -89,17 +100,41 @@ fn main() {
     canvas.present();
 
     let mut event_pump = sdl_context.event_pump().unwrap();
+    let mut paused = false; 
 
     'gameloop: loop {
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit {..} | Event::KeyDown {keycode: Some(Keycode::Escape), ..}=> break 'gameloop,
-                Event::KeyDown { keycode: Some(key), .. } => {
+                Event::KeyDown { keycode: Some(Keycode::Return), .. } => {
+                    // Open file dialog to select a new ROM when Enter is pressed
+                    let new_rom_path = FileDialog::new()
+                        .add_filter("CHIP-8 ROM", &["ch8", "rom", "bin"])
+                        .set_directory("../roms")
+                        .pick_file();
+
+                    let new_rom_path = match new_rom_path {
+                        Some(path) => path,
+                        None => continue,
+                    };
+
+                    rom = File::open(&new_rom_path).expect("Error opening ROM file");
+                    buffer = Vec::new();
+                    rom.read_to_end(&mut buffer).expect("Error reading ROM file");
+                    chip8.reset();
+                    chip8.load_rom(&buffer);
+                    paused = false;
+                },
+                // pause/unpause the emulator with P or space
+                Event::KeyDown { keycode: Some(Keycode::P), .. } | Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
+                    paused = !paused;
+                },
+                Event::KeyDown { keycode: Some(key), .. } if !paused => {
                     if let Some(k) = keymap(key) {
                         chip8.keypress(k, true);
                     }
                 },
-                Event::KeyUp { keycode: Some(key), .. } => {
+                Event::KeyUp { keycode: Some(key), .. } if !paused => {
                     if let Some(k) = keymap(key) {
                         chip8.keypress(k, false);
                     }
@@ -108,10 +143,12 @@ fn main() {
             }
         }
         
-        for _ in 0..TICKS_PER_FRAME {
-            chip8.tick();
+        if !paused {
+            for _ in 0..TICKS_PER_FRAME {
+                chip8.tick();
+            }
+            chip8.tick_timers();
         }
-        chip8.tick_timers();
         draw_screen(&chip8, &mut canvas);
     }
 }
