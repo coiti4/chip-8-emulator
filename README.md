@@ -12,6 +12,25 @@ CHIP-8 Emulator is a Rust-based emulator for the CHIP-8 architecture. It provide
    - Change the current exectuted ROMs using the file dialog.
    - Audio support.
 
+## Project Structure
+
+The repository is organized into the following directories and files to keep the project modular and maintainable:
+
+| Path         | Description                        |
+|--------------|------------------------------------|
+| `core/`      | Contains the core logic of the CHIP-8 emulator, including the CPU, memory, and instruction set implementation. This module is independent of the UI. |
+| `gui/`       | Handles the graphical user interface using SDL2. This includes rendering the CHIP-8 screen, handling user input, and displaying messages like "PAUSE". |
+| `roms/`      | Stores CHIP-8 ROM files that can be loaded into the emulator. Includes example ROMs for testing (e.g., games like INVADERS). |
+
+## Table of Contents
+
+- [Installation](#installation)
+- [Usage](#usage)
+- [Controls](#controls)
+- [Contributing](#contributing)
+- [Acknowledgments](#acknowledgments)
+- [License](#license)
+
 ## Installation
 
 To build and run the CHIP-8 Emulator, you need to have Rust and Cargo installed on your system. Additionally, you'll need the SDL2 library and its development headers.
@@ -93,10 +112,12 @@ The emulator maps the CHIP-8 keypad to the following keyboard keys:
 
 Contributions are welcome! If you find any issues or have suggestions for improvements, feel free to open an issue or submit a pull request.
 
-## License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
 ## Acknowledgments
 
 This project was inspired by the excellent work of [aquova](https://github.com/aquova) in their [chip8-book](https://github.com/aquova/chip8-book) repository. Their guide on building a CHIP-8 emulator provided valuable insights and motivation for this implementation.
+
+The provided Chip-8 games are supplied from [Zophar's Domain](https://www.zophar.net/pdroms/chip8/chip-8-games-pack.html). Original author unknown.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
