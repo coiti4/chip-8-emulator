@@ -1,4 +1,4 @@
-use std::collections::{VecDeque};
+use std::collections::VecDeque;
 use rand::random;
 
 mod instructions;
@@ -6,6 +6,8 @@ mod font;
 
 use instructions::Decoded;
 use font::{FONTSET, FONTSET_SIZE};
+
+use rodio::{OutputStream, Sink, Source};
 
 // The following are public because they are used in the main.rs file
 pub const SCREEN_WIDTH: usize = 64;
@@ -28,10 +30,19 @@ pub struct Emu {
     keys: [bool; NUM_KEYS], // keypad
     dt: u8, // delay timer
     st: u8, // sound timer
+
+    sink: Option<Sink>,    // Audio sink
+    _stream: Option<OutputStream>,  // Audio device
+    is_beeping: bool,   // Is the sound timer beeping?
 }
 
 impl Emu {
     pub fn new() -> Self {
+        let (stream, sink) = match OutputStream::try_default() {
+            Ok((stream, handle)) => (Some(stream), Some(Sink::try_new(&handle).unwrap())),
+            Err(_) => (None, None),
+        };
+
         let mut my_emu: Emu = Self {
             pc: START_ADDR,
             ram: [0; RAM_SIZE],
@@ -42,6 +53,9 @@ impl Emu {
             keys: [false; NUM_KEYS],
             dt: 0,
             st: 0,
+            sink,
+            _stream: stream,
+            is_beeping: false,
         };
 
         // Load fontset into memory
@@ -61,6 +75,9 @@ impl Emu {
         self.dt = 0;
         self.st = 0;
         self.ram[..FONTSET_SIZE].copy_from_slice(&FONTSET);
+
+        self.stop_beep();
+        self.is_beeping = false;
     }
 
     pub fn tick(&mut self) {
@@ -315,8 +332,17 @@ impl Emu {
 
         if self.st > 0 {
             // Beep: I'll implement this later
-            
+            if !self.is_beeping {
+                self.play_beep();
+                self.is_beeping = true;
+            }
             self.st -= 1;
+        } else {
+            // stop beep if timer is 0
+            if self.is_beeping {
+                self.stop_beep();
+                self.is_beeping = false;
+            }
         }
     }
 
@@ -334,6 +360,22 @@ impl Emu {
         let start = START_ADDR as usize;
         let end = start + rom.len();
         self.ram[start..end].copy_from_slice(rom);
+    }
+
+    fn play_beep(&self) {
+        if let Some(sink) = &self.sink {
+            let source = rodio::source::SineWave::new(440.0)
+                .take_duration(std::time::Duration::from_secs_f32(0.1))
+                .amplify(0.2);
+                
+            sink.append(source);
+        }
+    }
+
+    fn stop_beep(&self) {
+        if let Some(sink) = &self.sink {
+            sink.stop();
+        }
     }
 }
 
