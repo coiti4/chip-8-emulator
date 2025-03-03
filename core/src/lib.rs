@@ -93,11 +93,11 @@ impl Emu {
             (0, 0, 0xE, 0xE)    => Decoded::RET,
             (1, _, _, _)        => Decoded::Jump(opcode & 0x0FFF),
             (2, _, _, _)        => Decoded::Call(opcode & 0x0FFF),
-            (3, _, _, _)        => Decoded::SkipEq(nibble2, nibble1 + nibble0),
-            (4, _, _, _)        => Decoded::SkipNeq(nibble2, nibble1 + nibble0),
+            (3, _, _, _)        => Decoded::SkipEq(nibble2, (opcode & 0xFF) as u8),
+            (4, _, _, _)        => Decoded::SkipNeq(nibble2, (opcode & 0xFF) as u8),
             (5, _, _, 0)        => Decoded::SkipEqReg(nibble2, nibble1),
-            (6, _, _, _)        => Decoded::SetReg(nibble2, nibble1 + nibble0),
-            (7, _, _, _)        => Decoded::AddReg(nibble2, nibble1 + nibble0),
+            (6, _, _, _)        => Decoded::SetReg(nibble2, (opcode & 0xFF) as u8),
+            (7, _, _, _)        => Decoded::AddReg(nibble2, (opcode & 0xFF) as u8),
             (8, _, _, 0)        => Decoded::SetRegReg(nibble2, nibble1),
             (8, _, _, 1)        => Decoded::Or(nibble2, nibble1),
             (8, _, _, 2)        => Decoded::And(nibble2, nibble1),
@@ -110,7 +110,7 @@ impl Emu {
             (9, _, _, 0)        => Decoded::SkipNeqReg(nibble2, nibble1),
             (0xA, _, _, _)      => Decoded::SetIReg(opcode & 0x0FFF),
             (0xB, _, _, _)      => Decoded::JumpOffset(opcode & 0x0FFF),
-            (0xC, _, _, _)      => Decoded::Rand(nibble2, nibble1 + nibble0),
+            (0xC, _, _, _)      => Decoded::Rand(nibble2, (opcode & 0xFF) as u8),
             (0xD, _, _, _)      => Decoded::Draw(nibble2, nibble1, nibble0),
             (0xE, _, 9, 0xE)    => Decoded::SkipKey(nibble2),
             (0xE, _, 0xA, 1)    => Decoded::SkipNKey(nibble2),
@@ -202,49 +202,36 @@ impl Emu {
                 self.i_reg = addr;
             },
             Decoded::JumpOffset(offset) => {
-                self.pc = offset + self.v_reg[0] as u16;
+                self.pc = (offset + self.v_reg[0] as u16) & 0xFFF;
             },
             Decoded::Rand(x, value) => {
                 self.v_reg[x as usize] = random::<u8>() & value;
             },
             Decoded::Draw(x,y , nb_rows) => {
-                let x_pos = self.v_reg[x as usize] as u16;
-                let y_pos = self.v_reg[y as usize] as u16;
+                let x_coord = self.v_reg[x as usize] as u16;
+                let y_coord = self.v_reg[y as usize] as u16;
 
-                self.v_reg[NUM_REGS - 1] = 0; // Reset VF
+                let mut collision = false;
 
-                // iterate over each row of the sprite
-                for row in 0..nb_rows {
-                    let sprite_row = self.ram[self.i_reg as usize + row as usize];
+                for y_line in 0..nb_rows {
+                    let addr = (self.i_reg + y_line as u16) % 0xFFF;
+                    let pixels = self.ram[addr as usize];
+                    for x_line in 0..8 {
+                        if (pixels & (0x80 >> x_line)) != 0 {
+                            let x = (x_coord + x_line) as usize % SCREEN_WIDTH;
+                            let y = (y_coord + y_line as u16) as usize % SCREEN_HEIGHT;
 
-                    // iterate over each pixel(bit) in the row
-                    for col in 0..8 {
-                        let sprite_bit = (sprite_row >> (7 - col)) & 0x1; // MSB on the left
-                        /*
-                        sprite   screen  |  new screen
-                        0        0       |  0
-                        0        1       |  1
-                        1        0       |  1
-                        1        1       |  0 (collision)
-
-                        in the first two cases the screen bit is XORed with 0, so it remains the same
-                        in the last two cases the screen bit is XORed with 1, so it changes
-                        */
-                        if sprite_bit != 0 {
-                            let x_final = (x_pos as usize + col as usize) % SCREEN_WIDTH;
-                            let y_final = (y_pos as usize + row as usize)   % SCREEN_HEIGHT;
-
-                            let screen_idx = y_final * SCREEN_WIDTH + x_final;
-
-                            // if the screen bit was 1 (and sprite bit was 1), this means collision, set VF to 1
-                            if self.screen[screen_idx] {
-                                self.v_reg[NUM_REGS - 1] = 1;
-                            }
-
-                            // XOR the sprite bit with the screen bit
-                            self.screen[screen_idx] ^= true;
+                            let idx = y * SCREEN_WIDTH + x;
+                            collision |= self.screen[idx];
+                            self.screen[idx] ^= true;
                         }
                     }
+                }
+
+                if collision {
+                    self.v_reg[NUM_REGS - 1] = 1;
+                } else {
+                    self.v_reg[NUM_REGS - 1] = 0;
                 }
             },
             Decoded::SkipKey(x) => {
@@ -286,7 +273,7 @@ impl Emu {
             },
             Decoded::SetIRegFont(x) => { 
                 // store the address of v[x] sprite in I. Each sprite is 5 bytes long.
-                self.i_reg = self.v_reg[x as usize] as u16 * 5;
+                self.i_reg = (self.v_reg[x as usize] as u16 * 5) & 0xFFF;
             },
             Decoded::StoreBCD(x) => {
                 let value = self.v_reg[x as usize];

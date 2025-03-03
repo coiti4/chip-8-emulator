@@ -31,7 +31,7 @@ fn draw_screen(chip8: &Emu, canvas: &mut Canvas<Window>) {
             let y = (idx / SCREEN_WIDTH) as i32;
 
             // draw pixel at position (x, y) with scale
-            canvas.fill_rect(Rect::new(x as i32 * SCALE as i32, y as i32 * SCALE as i32, SCALE, SCALE)).unwrap();
+            canvas.fill_rect(Rect::new(x * SCALE as i32, y * SCALE as i32, SCALE, SCALE)).unwrap();
         }
     }
 
@@ -78,6 +78,7 @@ fn main() {
         for _ in 0..TICKS_PER_FRAME {
             chip8.tick();
         }
+        chip8.tick_timers();
         draw_screen(&chip8, &mut canvas);
     }
 }
